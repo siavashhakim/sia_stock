@@ -22,7 +22,7 @@ import pandas as pd
 import numpy as np
 from helper_functions import Singnal_processing_travelTime, Data_sia_reader,Time_series_forecasting_simple
 from helper_functions import Time_series_forecasting_advanced,Daily_Data_sia_reader,create_layout,layout_vis
-from helper_functions import Data_sia_reader_auto,comp_info
+from helper_functions import Data_sia_reader_auto,comp_info,Data_sia_reader_auto_index
 import panel as pn
 from datetime import datetime
 
@@ -250,4 +250,70 @@ pn.serve(app_col)
 
 
 
+"""
+/**********************************************************************
+               Stock Index
+***********************************************************************/
+"""
 
+Start__traindateD = '2019-01-01'
+End__traindateD = End_realdata
+
+
+aord = Data_sia_reader_auto_index('^AORD',Start__traindateD,End__traindateD,'1d')
+nikkei = Data_sia_reader_auto_index('1360.T',Start__traindateD,End__traindateD,'1d')
+hsi = Data_sia_reader_auto_index('^HSI',Start__traindateD,End__traindateD,'1d')
+daxi = Data_sia_reader_auto_index('DAX',Start__traindateD,End__traindateD,'1d')
+cac40 = Data_sia_reader_auto_index('^FCHI',Start__traindateD,End__traindateD,'1d')
+sp500 = Data_sia_reader_auto_index('^GSPC',Start__traindateD,End__traindateD,'1d')
+dji = Data_sia_reader_auto_index('^DJI',Start__traindateD,End__traindateD,'1d')
+nasdaq = Data_sia_reader_auto_index('^IXIC',Start__traindateD,End__traindateD,'1d')
+spy = Data_sia_reader_auto_index('SPY',Start__traindateD,End__traindateD,'1d')
+
+tsla = Data_sia_reader_auto_index('TSLA',Start__traindateD,End__traindateD,'1d')
+amc = Data_sia_reader_auto_index('AMC',Start__traindateD,End__traindateD,'1d')
+
+# Due to the timezone issues, we extract and calculate appropriate stock market data for analysis
+# Indicepanel is the DataFrame of our trading model
+indicepanel=pd.DataFrame(index=spy.index)
+
+indicepanel['spy']=spy['Open'].shift(-1)-spy['Open']
+indicepanel['spy_lag1']=indicepanel['spy'].shift(1)
+indicepanel['sp500']=sp500["Open"]-sp500['Open'].shift(1)
+indicepanel['nasdaq']=nasdaq['Open']-nasdaq['Open'].shift(1)
+indicepanel['dji']=dji['Open']-dji['Open'].shift(1)
+indicepanel['tsla']=tsla['Open']-tsla['Open'].shift(1)
+indicepanel['amc']=amc['Open']-amc['Open'].shift(1)
+
+indicepanel['cac40']=cac40['Open']-cac40['Open'].shift(1)
+indicepanel['daxi']=daxi['Open']-daxi['Open'].shift(1)
+
+indicepanel['aord']=aord['Close']-aord['Open']
+indicepanel['hsi']=hsi['Close']-hsi['Open']
+indicepanel['nikkei']=nikkei['Close']-nikkei['Open']
+indicepanel['Price']=spy['Open']
+
+
+indicepanel = indicepanel.fillna(method='ffill')
+indicepanel = indicepanel.dropna()
+
+
+#split the data into (1)train set and (2)test set
+Train = indicepanel.iloc[0:400, :]
+Test = indicepanel.iloc[400:, :]
+print(Train.shape, Test.shape)
+
+
+# Generate scatter matrix among all stock markets (and the price of SPY) to observe the association
+# from pandas.plotting import scatter_matrix
+# sm = scatter_matrix(Train, figsize=(10, 10))
+
+# Find the indice with largest correlation
+corr_array = Train.iloc[:, :-1].corr()['nasdaq']
+print(corr_array)
+
+corr_array = Train.iloc[:, :-1].corr()['tsla']
+print(corr_array)
+
+corr_array = Train.iloc[:, :-1].corr()['amc']
+print(corr_array)
